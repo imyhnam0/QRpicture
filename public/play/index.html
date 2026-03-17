@@ -1,17 +1,17 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>목소리 메시지 - QR Picture</title>
-  <meta property="og:title" content="목소리 메시지">
-  <meta property="og:description" content="QR Picture로 전달된 음성 메시지입니다.">
+  <title>Voice Message – DearVoice</title>
+  <meta property="og:title" content="Voice Message – DearVoice">
+  <meta property="og:description" content="A voice message delivered via DearVoice.">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
-      background: linear-gradient(135deg, #FFF8F0 0%, #FFF0D8 100%);
+      background: #f5f5f5;
       min-height: 100vh;
       display: flex;
       justify-content: center;
@@ -20,10 +20,10 @@
     }
 
     .card {
-      background: white;
-      border-radius: 24px;
-      padding: 48px 36px 40px;
-      max-width: 380px;
+      background: #ffffff;
+      border-radius: 20px;
+      padding: 44px 32px 36px;
+      max-width: 360px;
       width: 100%;
       text-align: center;
       box-shadow:
@@ -32,9 +32,9 @@
     }
 
     .icon-wrap {
-      width: 80px;
-      height: 80px;
-      background: linear-gradient(135deg, #F5E6C0, #E8D090);
+      width: 76px;
+      height: 76px;
+      background: #000000;
       border-radius: 50%;
       display: flex;
       align-items: center;
@@ -43,47 +43,45 @@
     }
 
     .icon-wrap svg {
-      width: 38px;
-      height: 38px;
-      fill: #8B6914;
+      width: 36px;
+      height: 36px;
+      fill: #ffffff;
     }
 
     h1 {
-      color: #5C4000;
-      font-size: 22px;
+      color: #000000;
+      font-size: 20px;
       font-weight: 700;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
 
     .subtitle {
-      color: #9B8C6C;
-      font-size: 14px;
-      line-height: 1.5;
-      margin-bottom: 36px;
+      color: #666666;
+      font-size: 13px;
+      line-height: 1.6;
+      margin-bottom: 32px;
     }
 
     /* 재생 버튼 */
     .play-btn {
-      width: 88px;
-      height: 88px;
+      width: 84px;
+      height: 84px;
       border-radius: 50%;
-      background: linear-gradient(135deg, #A07820, #8B6914);
+      background: #000000;
       border: none;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       margin: 0 auto 20px;
-      box-shadow:
-        0 4px 16px rgba(139, 105, 20, 0.35),
-        0 2px 6px rgba(139, 105, 20, 0.2);
-      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+      transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
       outline: none;
     }
 
     .play-btn:hover:not(:disabled) {
       transform: scale(1.06);
-      box-shadow: 0 6px 24px rgba(139, 105, 20, 0.45);
+      box-shadow: 0 6px 24px rgba(0,0,0,0.35);
     }
 
     .play-btn:active:not(:disabled) {
@@ -91,16 +89,13 @@
     }
 
     .play-btn:disabled {
-      background: #D0C8B0;
+      background: #cccccc;
       box-shadow: none;
       cursor: default;
     }
 
     .play-btn.playing {
-      background: linear-gradient(135deg, #E03030, #CC0000);
-      box-shadow:
-        0 4px 16px rgba(204, 0, 0, 0.35),
-        0 2px 6px rgba(204, 0, 0, 0.2);
+      background: #222222;
     }
 
     .play-btn svg {
@@ -112,17 +107,17 @@
     /* 진행 바 */
     .progress-wrap {
       width: 100%;
-      background: #F0EBE0;
+      background: #eeeeee;
       border-radius: 4px;
       height: 4px;
-      margin: 8px 0 16px;
+      margin: 8px 0 14px;
       overflow: hidden;
       cursor: pointer;
     }
 
     .progress-bar {
       height: 100%;
-      background: #8B6914;
+      background: #000000;
       border-radius: 4px;
       width: 0%;
       transition: width 0.1s linear;
@@ -133,31 +128,31 @@
       display: flex;
       justify-content: space-between;
       font-size: 12px;
-      color: #B0A080;
-      margin-bottom: 20px;
+      color: #999999;
+      margin-bottom: 18px;
     }
 
     .status {
-      font-size: 14px;
-      color: #9B8C6C;
+      font-size: 13px;
+      color: #666666;
       min-height: 20px;
     }
 
-    .status.error { color: #CC0000; }
-    .status.loading { color: #8B6914; }
-    .status.playing { color: #5C7A00; }
+    .status.error { color: #cc0000; }
+    .status.loading { color: #333333; }
+    .status.playing { color: #000000; font-weight: 500; }
 
     .date {
-      color: #C0B090;
+      color: #aaaaaa;
       font-size: 12px;
-      margin-top: 16px;
+      margin-top: 14px;
     }
 
     .footer {
-      margin-top: 32px;
-      padding-top: 20px;
-      border-top: 1px solid #F0EBE0;
-      color: #C0B090;
+      margin-top: 28px;
+      padding-top: 18px;
+      border-top: 1px solid #eeeeee;
+      color: #bbbbbb;
       font-size: 11px;
     }
 
@@ -165,7 +160,7 @@
 
     @keyframes pulse {
       0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
+      50% { opacity: 0.4; }
     }
     .loading-anim { animation: pulse 1.2s ease-in-out infinite; }
   </style>
@@ -178,8 +173,8 @@
       </svg>
     </div>
 
-    <h1>목소리 메시지</h1>
-    <p class="subtitle" id="subtitle">QR Picture로 전달된<br>음성 메시지입니다</p>
+    <h1 id="titleText"></h1>
+    <p class="subtitle" id="subtitle"></p>
 
     <button class="play-btn" id="playBtn" onclick="togglePlay()" disabled>
       <svg id="playIcon" viewBox="0 0 24 24">
@@ -195,49 +190,68 @@
       <span id="totalTime">0:00</span>
     </div>
 
-    <p class="status loading-anim" id="status">음성을 불러오는 중...</p>
+    <p class="status loading-anim" id="status"></p>
     <p class="date" id="dateText"></p>
 
     <audio id="audioPlayer" preload="metadata"></audio>
 
-    <div class="footer">
-      🎙️ QR Picture
-    </div>
+    <div class="footer">DearVoice</div>
   </div>
 
   <script>
     const PROJECT_ID = 'qrpicture-80247';
 
-    const audio = document.getElementById('audioPlayer');
-    const playBtn = document.getElementById('playBtn');
-    const playIcon = document.getElementById('playIcon');
-    const statusEl = document.getElementById('status');
-    const progressBar = document.getElementById('progressBar');
+    // ── 언어 감지 ──────────────────────────────────────────────
+    const isKo = (navigator.language || navigator.userLanguage || 'en')
+      .toLowerCase().startsWith('ko');
+
+    const T = {
+      title:       isKo ? '목소리 메시지'              : 'Voice Message',
+      subtitle:    isKo ? 'DearVoice로 전달된\n음성 메시지입니다' : 'A voice message\ndelivered via DearVoice',
+      loading:     isKo ? '음성을 불러오는 중...'       : 'Loading audio...',
+      ready:       isKo ? '재생 버튼을 눌러주세요'      : 'Press play to listen',
+      playing:     isKo ? '재생 중...'                  : 'Playing...',
+      errInvalid:  isKo ? '잘못된 링크입니다.'          : 'Invalid link.',
+      errLoad:     isKo ? '음성을 불러올 수 없습니다.'  : 'Unable to load audio.',
+      errPlay:     isKo ? '재생에 실패했습니다. 다시 시도해 주세요.' : 'Playback failed. Please try again.',
+      errAudio:    isKo ? '재생 오류가 발생했습니다.'   : 'Playback error occurred.',
+    };
+
+    // ── 페이지 텍스트 초기화 ──────────────────────────────────
+    document.getElementById('titleText').textContent = T.title;
+    document.getElementById('subtitle').innerHTML = T.subtitle.replace('\n', '<br>');
+    document.getElementById('status').textContent = T.loading;
+    document.title = T.title + ' – DearVoice';
+
+    // ── DOM 참조 ──────────────────────────────────────────────
+    const audio         = document.getElementById('audioPlayer');
+    const playBtn       = document.getElementById('playBtn');
+    const playIcon      = document.getElementById('playIcon');
+    const statusEl      = document.getElementById('status');
+    const progressBar   = document.getElementById('progressBar');
     const currentTimeEl = document.getElementById('currentTime');
-    const totalTimeEl = document.getElementById('totalTime');
+    const totalTimeEl   = document.getElementById('totalTime');
 
     let isPlaying = false;
 
-    // URL에서 id 파라미터 추출
+    // ── URL 파라미터 ──────────────────────────────────────────
     const params = new URLSearchParams(window.location.search);
     const id = params.get('id');
 
     if (!id) {
-      setError('잘못된 링크입니다.');
+      setError(T.errInvalid);
     } else {
       loadAudio(id);
     }
 
+    // ── 오디오 로드 ───────────────────────────────────────────
     async function loadAudio(id) {
       try {
-        // Firestore REST API로 오디오 문서 조회
         const firestoreUrl =
           `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/audios/${id}`;
 
         const res = await fetch(firestoreUrl);
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`);
-        }
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
         const data = await res.json();
         const audioUrl = data.fields?.url?.stringValue;
@@ -247,24 +261,25 @@
         const ts = data.fields?.createdAt?.timestampValue;
         if (ts) {
           const d = new Date(ts);
+          const locale = isKo ? 'ko-KR' : 'en-US';
           document.getElementById('dateText').textContent =
-            d.toLocaleDateString('ko-KR', {
+            d.toLocaleDateString(locale, {
               year: 'numeric', month: 'long', day: 'numeric'
             });
         }
 
-        // 오디오 로드
         audio.src = audioUrl;
         audio.load();
         playBtn.disabled = false;
-        setStatus('재생 버튼을 눌러주세요', '');
+        setStatus(T.ready, '');
         statusEl.classList.remove('loading-anim');
       } catch (e) {
-        setError('음성을 불러올 수 없습니다.');
+        setError(T.errLoad);
         console.error(e);
       }
     }
 
+    // ── 재생 토글 ─────────────────────────────────────────────
     function togglePlay() {
       if (isPlaying) {
         audio.pause();
@@ -274,7 +289,7 @@
         audio.play()
           .then(() => setPlayState(true))
           .catch(err => {
-            setError('재생에 실패했습니다. 다시 시도해 주세요.');
+            setError(T.errPlay);
             console.error(err);
           });
       }
@@ -285,10 +300,10 @@
       playBtn.className = 'play-btn' + (playing ? ' playing' : '');
       if (playing) {
         playIcon.innerHTML = '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
-        setStatus('재생 중...', 'playing');
+        setStatus(T.playing, 'playing');
       } else {
         playIcon.innerHTML = '<path d="M8 5v14l11-7z"/>';
-        setStatus('재생 버튼을 눌러주세요', '');
+        setStatus(T.ready, '');
       }
     }
 
@@ -318,7 +333,7 @@
       audio.currentTime = ratio * audio.duration;
     }
 
-    // 오디오 이벤트
+    // ── 오디오 이벤트 ─────────────────────────────────────────
     audio.addEventListener('ended', () => setPlayState(false));
 
     audio.addEventListener('timeupdate', () => {
@@ -333,7 +348,7 @@
     });
 
     audio.addEventListener('error', () => {
-      setError('재생 오류가 발생했습니다.');
+      setError(T.errAudio);
       setPlayState(false);
     });
   </script>

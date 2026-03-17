@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import '../l10n/app_strings.dart';
 import '../services/player_service.dart';
 import 'player_screen.dart';
 
@@ -46,7 +47,7 @@ class _ScanScreenState extends State<ScanScreen> {
       if (mounted) {
         setState(() {
           _isAnalyzing = false;
-          _galleryError = '이 QR 코드는 QR Picture 앱에서 만들어진 것이 아닙니다.';
+          _galleryError = S.scanNotQrPicture;
         });
       }
       return;
@@ -60,7 +61,6 @@ class _ScanScreenState extends State<ScanScreen> {
       context,
       MaterialPageRoute(builder: (_) => PlayerScreen(uuid: uuid)),
     ).then((_) {
-      // 플레이어에서 돌아오면 카메라 재시작
       _hasNavigated = false;
       _galleryError = null;
       _cameraController.start();
@@ -84,13 +84,19 @@ class _ScanScreenState extends State<ScanScreen> {
         return;
       }
 
-      // MobileScanner로 이미지 내 QR 분석
-      final result = await _cameraController.analyzeImage(image.path);
+      _cameraController.stop();
+
+      BarcodeCapture? result;
+      try {
+        result = await _cameraController.analyzeImage(image.path);
+      } finally {
+        if (mounted) _cameraController.start();
+      }
 
       if (result == null || result.barcodes.isEmpty) {
         setState(() {
           _isAnalyzing = false;
-          _galleryError = 'QR 코드를 찾을 수 없습니다. 다른 사진을 선택해 보세요.';
+          _galleryError = S.scanNoQr;
         });
         return;
       }
@@ -99,7 +105,7 @@ class _ScanScreenState extends State<ScanScreen> {
       if (rawValue == null) {
         setState(() {
           _isAnalyzing = false;
-          _galleryError = 'QR 코드 값을 읽을 수 없습니다.';
+          _galleryError = S.scanCannotRead;
         });
         return;
       }
@@ -107,9 +113,11 @@ class _ScanScreenState extends State<ScanScreen> {
       setState(() => _isAnalyzing = false);
       _handleQrValue(rawValue);
     } catch (e) {
+      if (mounted) _cameraController.start();
+      debugPrint('Gallery QR scan error: $e');
       setState(() {
         _isAnalyzing = false;
-        _galleryError = '이미지 분석 중 오류가 발생했습니다.';
+        _galleryError = S.scanAnalyzeError('$e');
       });
     }
   }
@@ -122,19 +130,16 @@ class _ScanScreenState extends State<ScanScreen> {
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // 카메라 뷰
           MobileScanner(
             controller: _cameraController,
             onDetect: _onBarcodeDetected,
           ),
 
-          // 스캔 오버레이
           CustomPaint(
             painter: _ScanOverlayPainter(),
             child: const SizedBox.expand(),
           ),
 
-          // 상단 바
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -144,10 +149,10 @@ class _ScanScreenState extends State<ScanScreen> {
                     onPressed: () => Navigator.pop(context),
                     icon: const Icon(Icons.arrow_back, color: Colors.white),
                   ),
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'QR 스캔',
-                      style: TextStyle(
+                      S.scanTitle,
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
@@ -155,7 +160,6 @@ class _ScanScreenState extends State<ScanScreen> {
                       textAlign: TextAlign.center,
                     ),
                   ),
-                  // 손전등 버튼
                   IconButton(
                     onPressed: () => _cameraController.toggleTorch(),
                     icon: ValueListenableBuilder(
@@ -177,16 +181,15 @@ class _ScanScreenState extends State<ScanScreen> {
             ),
           ),
 
-          // 안내 텍스트 (스캔 프레임 아래)
           Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const SizedBox(height: 260), // 프레임 크기만큼 내려가기
+                const SizedBox(height: 260),
                 const SizedBox(height: 20),
-                const Text(
-                  'QR 코드를 프레임 안에 위치시켜 주세요',
-                  style: TextStyle(
+                Text(
+                  S.scanHint,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 14,
                     shadows: [Shadow(blurRadius: 4)],
@@ -196,7 +199,6 @@ class _ScanScreenState extends State<ScanScreen> {
             ),
           ),
 
-          // 하단 버튼 영역
           Positioned(
             left: 0,
             right: 0,
@@ -233,7 +235,8 @@ class _ScanScreenState extends State<ScanScreen> {
                               ),
                             ),
                             GestureDetector(
-                              onTap: () => setState(() => _galleryError = null),
+                              onTap: () =>
+                                  setState(() => _galleryError = null),
                               child: const Icon(Icons.close,
                                   color: Colors.white, size: 18),
                             ),
@@ -241,7 +244,6 @@ class _ScanScreenState extends State<ScanScreen> {
                         ),
                       ),
 
-                    // 갤러리에서 선택 버튼
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
@@ -257,14 +259,15 @@ class _ScanScreenState extends State<ScanScreen> {
                               )
                             : const Icon(Icons.photo_library_outlined),
                         label: Text(
-                          _isAnalyzing ? '분석 중...' : '갤러리에서 QR 사진 선택',
+                          _isAnalyzing ? S.analyzing : S.selectQrFromGallery,
                           style: const TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white.withValues(alpha: 0.15),
+                          backgroundColor:
+                              Colors.white.withValues(alpha: 0.15),
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
@@ -297,7 +300,6 @@ class _ScanOverlayPainter extends CustomPainter {
     const cornerRadius = 3.0;
 
     final centerX = size.width / 2;
-    // 약간 위쪽에 프레임 위치
     final centerY = size.height * 0.44;
 
     final scanRect = Rect.fromCenter(
@@ -306,7 +308,6 @@ class _ScanOverlayPainter extends CustomPainter {
       height: scanSize,
     );
 
-    // 반투명 어두운 오버레이 (가운데 구멍)
     final overlayPaint = Paint()..color = Colors.black.withValues(alpha: 0.55);
     canvas.drawPath(
       Path.combine(
@@ -323,7 +324,6 @@ class _ScanOverlayPainter extends CustomPainter {
       overlayPaint,
     );
 
-    // 코너 마커
     final cornerPaint = Paint()
       ..color = const Color(0xFFF5E6C0)
       ..strokeWidth = 3.5
@@ -331,7 +331,6 @@ class _ScanOverlayPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
 
-    // 좌상단
     canvas.drawPath(
       Path()
         ..moveTo(scanRect.left, scanRect.top + cornerLen)
@@ -339,7 +338,6 @@ class _ScanOverlayPainter extends CustomPainter {
         ..lineTo(scanRect.left + cornerLen, scanRect.top),
       cornerPaint,
     );
-    // 우상단
     canvas.drawPath(
       Path()
         ..moveTo(scanRect.right - cornerLen, scanRect.top)
@@ -347,7 +345,6 @@ class _ScanOverlayPainter extends CustomPainter {
         ..lineTo(scanRect.right, scanRect.top + cornerLen),
       cornerPaint,
     );
-    // 좌하단
     canvas.drawPath(
       Path()
         ..moveTo(scanRect.left, scanRect.bottom - cornerLen)
@@ -355,7 +352,6 @@ class _ScanOverlayPainter extends CustomPainter {
         ..lineTo(scanRect.left + cornerLen, scanRect.bottom),
       cornerPaint,
     );
-    // 우하단
     canvas.drawPath(
       Path()
         ..moveTo(scanRect.right - cornerLen, scanRect.bottom)

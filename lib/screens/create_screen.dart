@@ -2,16 +2,23 @@ import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:image_cropper/image_cropper.dart';
+import 'package:just_audio/just_audio.dart';
 import 'package:intl/intl.dart';
+import '../l10n/app_strings.dart';
+import '../models/layout_type.dart';
 import '../services/audio_service.dart';
 import '../services/storage_service.dart';
 import '../widgets/polaroid_widget.dart';
+import '../widgets/layout_widgets.dart';
 import 'preview_screen.dart';
 
 enum _Step { selectPhoto, recordAudio, processing }
 
 class CreateScreen extends StatefulWidget {
-  const CreateScreen({super.key});
+  final LayoutType layoutType;
+
+  const CreateScreen({super.key, required this.layoutType});
 
   @override
   State<CreateScreen> createState() => _CreateScreenState();
@@ -23,12 +30,19 @@ class _CreateScreenState extends State<CreateScreen> {
   final ImagePicker _imagePicker = ImagePicker();
 
   _Step _step = _Step.selectPhoto;
-  Uint8List? _selectedPhotoBytes;
+  late List<Uint8List?> _photos;
 
   bool _isRecording = false;
   bool _hasRecording = false;
   int _recordingSeconds = 0;
   Timer? _recordingTimer;
+
+  bool _isPlaying = false;
+  Duration _playbackPosition = Duration.zero;
+  Duration? _playbackDuration;
+  StreamSubscription<PlayerState>? _playerStateSub;
+  StreamSubscription<Duration>? _positionSub;
+  StreamSubscription<Duration?>? _durationSub;
 
   double _uploadProgress = 0;
   String? _errorMessage;
@@ -36,29 +50,95 @@ class _CreateScreenState extends State<CreateScreen> {
   final String _dateText = DateFormat('yyyy.MM.dd').format(DateTime.now());
 
   @override
+  void initState() {
+    super.initState();
+    _photos = List.filled(widget.layoutType.photoCount, null);
+
+    _playerStateSub = _audioService.playerStateStream.listen((state) {
+      if (!mounted) return;
+      setState(() {
+        _isPlaying = state.playing;
+        if (state.processingState == ProcessingState.completed) {
+          _isPlaying = false;
+          _playbackPosition = Duration.zero;
+        }
+      });
+    });
+
+    _positionSub = _audioService.positionStream.listen((pos) {
+      if (!mounted) return;
+      setState(() => _playbackPosition = pos);
+    });
+
+    _durationSub = _audioService.durationStream.listen((dur) {
+      if (!mounted) return;
+      setState(() => _playbackDuration = dur);
+    });
+  }
+
+  @override
   void dispose() {
+    _playerStateSub?.cancel();
+    _positionSub?.cancel();
+    _durationSub?.cancel();
     _recordingTimer?.cancel();
     _audioService.dispose();
     super.dispose();
   }
 
-  // ─── 사진 선택 ────────────────────────────────────────────────
+  // ─── 사진 선택 (크롭 포함) ────────────────────────────────────
 
-  Future<void> _pickImage() async {
+  Future<void> _pickImage(int slotIndex) async {
     try {
       final XFile? picked = await _imagePicker.pickImage(
         source: ImageSource.gallery,
-        maxWidth: 1200,
-        maxHeight: 1200,
         imageQuality: 90,
       );
       if (picked == null) return;
-      final bytes = await picked.readAsBytes();
-      setState(() => _selectedPhotoBytes = bytes);
+
+      final (double ratioX, double ratioY) = _cropAspectRatio();
+
+      final croppedFile = await ImageCropper().cropImage(
+        sourcePath: picked.path,
+        aspectRatio: CropAspectRatio(ratioX: ratioX, ratioY: ratioY),
+        uiSettings: [
+          AndroidUiSettings(
+            toolbarTitle: S.cropPhoto,
+            toolbarColor: Colors.black,
+            toolbarWidgetColor: Colors.white,
+            lockAspectRatio: true,
+            initAspectRatio: CropAspectRatioPreset.original,
+          ),
+          IOSUiSettings(
+            title: S.cropPhoto,
+            aspectRatioLockEnabled: true,
+            minimumAspectRatio: 1.0,
+          ),
+        ],
+      );
+
+      if (croppedFile == null) return;
+      final bytes = await croppedFile.readAsBytes();
+      setState(() => _photos[slotIndex] = bytes);
     } catch (e) {
-      _showError('사진을 불러오는 중 오류가 발생했습니다.');
+      _showError(S.errLoadPhoto);
     }
   }
+
+  (double, double) _cropAspectRatio() {
+    switch (widget.layoutType) {
+      case LayoutType.single:
+        return (1, 1);
+      case LayoutType.strip4:
+        return (5, 3);
+      case LayoutType.grid2x2:
+        return (1, 1);
+    }
+  }
+
+  bool get _canProceedToRecord => _photos.every((p) => p != null);
+
+  int get _filledCount => _photos.where((p) => p != null).length;
 
   // ─── 음성 녹음 ────────────────────────────────────────────────
 
@@ -71,9 +151,10 @@ class _CreateScreenState extends State<CreateScreen> {
   }
 
   Future<void> _startRecording() async {
+    if (_isPlaying) await _audioService.stopPlayback();
     final hasPermission = await _audioService.hasPermission();
     if (!hasPermission) {
-      _showError('마이크 접근 권한이 필요합니다. 설정에서 허용해 주세요.');
+      _showError(S.errMicPermission);
       return;
     }
     try {
@@ -88,7 +169,7 @@ class _CreateScreenState extends State<CreateScreen> {
         _hasRecording = false;
       });
     } catch (e) {
-      _showError('녹음을 시작할 수 없습니다.');
+      _showError(S.errStartRecording);
     }
   }
 
@@ -99,27 +180,44 @@ class _CreateScreenState extends State<CreateScreen> {
       setState(() {
         _isRecording = false;
         _hasRecording = true;
+        _playbackPosition = Duration.zero;
+        _playbackDuration = null;
       });
     } catch (e) {
-      _showError('녹음 저장 중 오류가 발생했습니다.');
+      _showError(S.errSaveRecording);
     }
   }
 
-  Future<void> _playPreview() async {
+  Future<void> _togglePlayPreview() async {
     try {
-      await _audioService.playRecording();
+      if (_isPlaying) {
+        await _audioService.pausePlayback();
+      } else {
+        final dur = _playbackDuration;
+        final isEnded = dur != null &&
+            _playbackPosition.inMilliseconds >= dur.inMilliseconds - 100;
+        if (isEnded || _playbackPosition == Duration.zero) {
+          await _audioService.playRecording();
+        } else {
+          await _audioService.resumePlayback();
+        }
+      }
     } catch (e) {
-      _showError('재생 중 오류가 발생했습니다.');
+      _showError(S.errPlayback);
     }
   }
 
   void _resetRecording() {
     _recordingTimer?.cancel();
+    if (_isPlaying) _audioService.stopPlayback();
     _audioService.clearRecording();
     setState(() {
       _isRecording = false;
       _hasRecording = false;
       _recordingSeconds = 0;
+      _isPlaying = false;
+      _playbackPosition = Duration.zero;
+      _playbackDuration = null;
     });
   }
 
@@ -145,7 +243,8 @@ class _CreateScreenState extends State<CreateScreen> {
         context,
         MaterialPageRoute(
           builder: (_) => PreviewScreen(
-            photoBytes: _selectedPhotoBytes!,
+            photos: _photos.whereType<Uint8List>().toList(),
+            layoutType: widget.layoutType,
             qrData: result.qrUrl,
             dateText: _dateText,
           ),
@@ -155,7 +254,7 @@ class _CreateScreenState extends State<CreateScreen> {
       if (!mounted) return;
       setState(() {
         _step = _Step.recordAudio;
-        _errorMessage = '업로드에 실패했습니다. 네트워크를 확인하고 다시 시도해 주세요.';
+        _errorMessage = S.errUpload;
       });
     }
   }
@@ -184,7 +283,7 @@ class _CreateScreenState extends State<CreateScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('새로 만들기'),
+        title: Text(S.createTitle(widget.layoutType.displayName)),
         leading: _step != _Step.processing
             ? IconButton(
                 icon: const Icon(Icons.arrow_back),
@@ -210,61 +309,62 @@ class _CreateScreenState extends State<CreateScreen> {
   // ─── Step 1: 사진 선택 ────────────────────────────────────────
 
   Widget _buildSelectPhotoStep() {
-    final previewWidth = MediaQuery.of(context).size.width * 0.62;
     return SafeArea(
       child: Column(
         children: [
           _buildStepIndicator(0),
           const SizedBox(height: 8),
-          const Text(
-            '사진을 선택해 주세요',
-            style: TextStyle(
+          Text(
+            widget.layoutType == LayoutType.single
+                ? S.selectPhoto
+                : S.selectPhotos(widget.layoutType.photoCount),
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF5C4000),
+              color: Colors.black,
             ),
           ),
-          const SizedBox(height: 20),
-          Expanded(
-            child: Center(
-              child: GestureDetector(
-                onTap: _pickImage,
-                child: PolaroidWidget(
-                  photoBytes: _selectedPhotoBytes,
-                  dateText: _dateText,
-                  width: previewWidth,
-                ),
-              ),
+          if (widget.layoutType != LayoutType.single) ...[
+            const SizedBox(height: 4),
+            Text(
+              S.photoProgress(_filledCount, widget.layoutType.photoCount),
+              style: const TextStyle(fontSize: 12, color: Color(0xFF888888)),
             ),
+          ],
+          const SizedBox(height: 16),
+          Expanded(
+            child: _buildPhotoEditor(),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
             child: Column(
               children: [
-                OutlinedButton.icon(
-                  onPressed: _pickImage,
-                  icon: const Icon(Icons.photo_library_outlined),
-                  label: const Text('갤러리에서 선택'),
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size.fromHeight(50),
-                    side: const BorderSide(color: Color(0xFF8B6914)),
-                    foregroundColor: const Color(0xFF8B6914),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                if (widget.layoutType == LayoutType.single)
+                  OutlinedButton.icon(
+                    onPressed: () => _pickImage(0),
+                    icon: const Icon(Icons.photo_library_outlined),
+                    label: Text(S.selectFromGallery),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(50),
+                      side: const BorderSide(color: Colors.black),
+                      foregroundColor: Colors.black,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 12),
+                if (widget.layoutType == LayoutType.single)
+                  const SizedBox(height: 12),
                 ElevatedButton(
-                  onPressed: _selectedPhotoBytes != null
+                  onPressed: _canProceedToRecord
                       ? () => setState(() => _step = _Step.recordAudio)
                       : null,
                   style: ElevatedButton.styleFrom(
                     minimumSize: const Size.fromHeight(50),
                   ),
-                  child: const Text(
-                    '다음: 음성 녹음',
-                    style: TextStyle(
+                  child: Text(
+                    S.nextRecord,
+                    style: const TextStyle(
                         fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                 ),
@@ -276,68 +376,137 @@ class _CreateScreenState extends State<CreateScreen> {
     );
   }
 
+  Widget _buildPhotoEditor() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    switch (widget.layoutType) {
+      case LayoutType.single:
+        return Center(
+          child: GestureDetector(
+            onTap: () => _pickImage(0),
+            child: PolaroidWidget(
+              photoBytes: _photos[0],
+              dateText: _dateText,
+              width: screenWidth * 0.62,
+            ),
+          ),
+        );
+      case LayoutType.strip4:
+        return SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Center(
+            child: Strip4Widget(
+              photos: _photos,
+              dateText: _dateText,
+              width: screenWidth * 0.52,
+              onTapPhoto: _pickImage,
+            ),
+          ),
+        );
+      case LayoutType.grid2x2:
+        return Center(
+          child: Grid2x2Widget(
+            photos: _photos,
+            dateText: _dateText,
+            width: screenWidth * 0.78,
+            onTapPhoto: _pickImage,
+          ),
+        );
+    }
+  }
+
   // ─── Step 2: 음성 녹음 ────────────────────────────────────────
 
   Widget _buildRecordAudioStep() {
-    final previewWidth = MediaQuery.of(context).size.width * 0.38;
+    final screenWidth = MediaQuery.of(context).size.width;
     return SafeArea(
       child: Column(
         children: [
           _buildStepIndicator(1),
-          const SizedBox(height: 8),
-          const Text(
-            '목소리를 녹음해 주세요',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF5C4000),
-            ),
-          ),
-          const SizedBox(height: 20),
-          // 작은 폴라로이드 미리보기
-          PolaroidWidget(
-            photoBytes: _selectedPhotoBytes,
-            dateText: _dateText,
-            width: previewWidth,
-          ),
-          const SizedBox(height: 28),
-          // 녹음 상태 표시
-          _buildRecordingStatus(),
-          const SizedBox(height: 20),
-          // 녹음 버튼
-          _buildRecordButton(),
-          const SizedBox(height: 16),
-          // 재생/재녹음 버튼
-          if (_hasRecording && !_isRecording) _buildPlaybackButtons(),
-          const Spacer(),
-          if (_errorMessage != null)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Text(
-                _errorMessage!,
-                style: const TextStyle(color: Colors.red, fontSize: 13),
-                textAlign: TextAlign.center,
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Column(
+                children: [
+                  Text(
+                    S.recordYourVoice,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    height: MediaQuery.of(context).size.height * 0.28,
+                    child: Center(
+                      child: FittedBox(
+                        fit: BoxFit.contain,
+                        child: _buildAudioStepPreview(screenWidth),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  _buildRecordingStatus(),
+                  const SizedBox(height: 16),
+                  _buildRecordButton(),
+                  const SizedBox(height: 12),
+                  if (_hasRecording && !_isRecording) _buildPlaybackUI(),
+                  if (_errorMessage != null)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
+                      child: Text(
+                        _errorMessage!,
+                        style:
+                            const TextStyle(color: Colors.red, fontSize: 13),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                ],
               ),
             ),
+          ),
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
             child: ElevatedButton(
-              onPressed: _hasRecording && !_isRecording
-                  ? _processAndCreate
-                  : null,
+              onPressed:
+                  _hasRecording && !_isRecording ? _processAndCreate : null,
               style: ElevatedButton.styleFrom(
                 minimumSize: const Size.fromHeight(50),
               ),
-              child: const Text(
-                'QR 사진 만들기',
+              child: Text(
+                S.createQrPhoto,
                 style:
-                    TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
             ),
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildAudioStepPreview(double screenWidth) {
+    final w = screenWidth * 0.52;
+    switch (widget.layoutType) {
+      case LayoutType.single:
+        return PolaroidWidget(
+          photoBytes: _photos[0],
+          dateText: _dateText,
+          width: w,
+        );
+      case LayoutType.strip4:
+        return Strip4Widget(
+          photos: _photos,
+          dateText: _dateText,
+          width: w,
+        );
+      case LayoutType.grid2x2:
+        return Grid2x2Widget(
+          photos: _photos,
+          dateText: _dateText,
+          width: w,
+        );
+    }
   }
 
   Widget _buildRecordingStatus() {
@@ -366,9 +535,10 @@ class _CreateScreenState extends State<CreateScreen> {
                 ),
               ),
               const SizedBox(width: 6),
-              const Text(
-                '녹음 중...',
-                style: TextStyle(color: Color(0xFFCC0000), fontSize: 13),
+              Text(
+                S.recording,
+                style:
+                    const TextStyle(color: Color(0xFFCC0000), fontSize: 13),
               ),
             ],
           ),
@@ -379,24 +549,24 @@ class _CreateScreenState extends State<CreateScreen> {
         children: [
           const Icon(
             Icons.check_circle_outline,
-            color: Color(0xFF5C7A00),
+            color: Colors.black,
             size: 28,
           ),
           const SizedBox(height: 4),
           Text(
-            '녹음 완료  ${_formatDuration(_recordingSeconds)}',
+            S.recordingDone(_formatDuration(_recordingSeconds)),
             style: const TextStyle(
               fontSize: 15,
-              color: Color(0xFF5C7A00),
+              color: Colors.black,
               fontWeight: FontWeight.w500,
             ),
           ),
         ],
       );
     } else {
-      return const Text(
-        '버튼을 눌러 녹음을 시작하세요',
-        style: TextStyle(color: Color(0xFF9B8C6C), fontSize: 14),
+      return Text(
+        S.pressToRecord,
+        style: const TextStyle(color: Color(0xFF888888), fontSize: 14),
       );
     }
   }
@@ -410,15 +580,11 @@ class _CreateScreenState extends State<CreateScreen> {
         height: 80,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: _isRecording
-              ? const Color(0xFFCC0000)
-              : const Color(0xFF8B6914),
+          color: _isRecording ? const Color(0xFFCC0000) : Colors.black,
           boxShadow: [
             BoxShadow(
-              color: (_isRecording
-                      ? const Color(0xFFCC0000)
-                      : const Color(0xFF8B6914))
-                  .withValues(alpha: 0.4),
+              color: (_isRecording ? const Color(0xFFCC0000) : Colors.black)
+                  .withValues(alpha: 0.3),
               blurRadius: 16,
               spreadRadius: 2,
             ),
@@ -433,26 +599,82 @@ class _CreateScreenState extends State<CreateScreen> {
     );
   }
 
-  Widget _buildPlaybackButtons() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+  Widget _buildPlaybackUI() {
+    final durMs = (_playbackDuration?.inMilliseconds ?? 0).toDouble();
+    final posMs = _playbackPosition.inMilliseconds
+        .toDouble()
+        .clamp(0.0, durMs > 0 ? durMs : 1.0);
+    final progress = durMs > 0 ? posMs / durMs : 0.0;
+
+    return Column(
       children: [
-        TextButton.icon(
-          onPressed: _playPreview,
-          icon: const Icon(Icons.play_circle_outline, size: 20),
-          label: const Text('미리 듣기'),
-          style: TextButton.styleFrom(
-            foregroundColor: const Color(0xFF5C7A00),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 5,
+              backgroundColor: const Color(0xFFDDDDDD),
+              valueColor: const AlwaysStoppedAnimation<Color>(Colors.black),
+            ),
           ),
         ),
-        const SizedBox(width: 20),
-        TextButton.icon(
-          onPressed: _resetRecording,
-          icon: const Icon(Icons.refresh, size: 20),
-          label: const Text('다시 녹음'),
-          style: TextButton.styleFrom(
-            foregroundColor: const Color(0xFF9B8C6C),
-          ),
+        const SizedBox(height: 5),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              _formatDuration(_playbackPosition.inSeconds),
+              style: const TextStyle(
+                fontSize: 13,
+                color: Colors.black,
+                fontFeatures: [FontFeature.tabularFigures()],
+              ),
+            ),
+            const Text(
+              ' / ',
+              style: TextStyle(fontSize: 13, color: Color(0xFF888888)),
+            ),
+            Text(
+              _playbackDuration != null
+                  ? _formatDuration(_playbackDuration!.inSeconds)
+                  : '--:--',
+              style: const TextStyle(
+                fontSize: 13,
+                color: Color(0xFF888888),
+                fontFeatures: [FontFeature.tabularFigures()],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            TextButton.icon(
+              onPressed: _togglePlayPreview,
+              icon: Icon(
+                _isPlaying
+                    ? Icons.pause_circle_outline
+                    : Icons.play_circle_outline,
+                size: 22,
+              ),
+              label: Text(_isPlaying ? S.pause : S.preview),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.black,
+              ),
+            ),
+            const SizedBox(width: 20),
+            TextButton.icon(
+              onPressed: _resetRecording,
+              icon: const Icon(Icons.refresh, size: 20),
+              label: Text(S.reRecord),
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFF888888),
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -469,16 +691,16 @@ class _CreateScreenState extends State<CreateScreen> {
           children: [
             CircularProgressIndicator(
               value: _uploadProgress > 0 ? _uploadProgress : null,
-              color: const Color(0xFF8B6914),
+              color: Colors.black,
               strokeWidth: 3,
             ),
             const SizedBox(height: 24),
-            const Text(
-              '음성을 업로드하고\nQR 코드를 생성하는 중입니다...',
+            Text(
+              S.uploading,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 16,
-                color: Color(0xFF5C4000),
+                color: Colors.black,
                 height: 1.5,
               ),
             ),
@@ -488,7 +710,7 @@ class _CreateScreenState extends State<CreateScreen> {
                 '${(_uploadProgress * 100).toInt()}%',
                 style: const TextStyle(
                   fontSize: 14,
-                  color: Color(0xFF9B8C6C),
+                  color: Color(0xFF888888),
                 ),
               ),
             ],
@@ -505,11 +727,11 @@ class _CreateScreenState extends State<CreateScreen> {
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
       child: Row(
         children: [
-          _buildStepDot(0, '사진', current),
+          _buildStepDot(0, S.stepPhoto, current),
           _buildStepLine(current > 0),
-          _buildStepDot(1, '녹음', current),
+          _buildStepDot(1, S.stepRecord, current),
           _buildStepLine(current > 1),
-          _buildStepDot(2, '완성', current),
+          _buildStepDot(2, S.stepDone, current),
         ],
       ),
     );
@@ -525,9 +747,8 @@ class _CreateScreenState extends State<CreateScreen> {
           height: 30,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: isDone || isActive
-                ? const Color(0xFF8B6914)
-                : const Color(0xFFDDD5C0),
+            color:
+                isDone || isActive ? Colors.black : const Color(0xFFDDDDDD),
           ),
           child: Center(
             child: isDone
@@ -548,9 +769,7 @@ class _CreateScreenState extends State<CreateScreen> {
           style: TextStyle(
             fontSize: 11,
             fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
-            color: isActive
-                ? const Color(0xFF8B6914)
-                : const Color(0xFFB0A080),
+            color: isActive ? Colors.black : const Color(0xFFAAAAAA),
           ),
         ),
       ],
@@ -562,7 +781,7 @@ class _CreateScreenState extends State<CreateScreen> {
       child: Container(
         height: 2,
         margin: const EdgeInsets.only(bottom: 18),
-        color: isDone ? const Color(0xFF8B6914) : const Color(0xFFDDD5C0),
+        color: isDone ? Colors.black : const Color(0xFFDDDDDD),
       ),
     );
   }

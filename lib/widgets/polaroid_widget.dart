@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import '../l10n/app_strings.dart';
 
 class PolaroidWidget extends StatelessWidget {
   final Uint8List? photoBytes;
@@ -73,21 +74,21 @@ class PolaroidWidget extends StatelessWidget {
       );
     }
     return Container(
-      color: const Color(0xFFEDE8DC),
-      child: const Center(
+      color: const Color(0xFFEEEEEE),
+      child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
+            const Icon(
               Icons.photo_outlined,
               size: 40,
-              color: Color(0xFFB0A080),
+              color: Color(0xFFBDBDBD),
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Text(
-              '사진을 선택해 주세요',
-              style: TextStyle(
-                color: Color(0xFFB0A080),
+              S.selectPhoto,
+              style: const TextStyle(
+                color: Color(0xFFBDBDBD),
                 fontSize: 11,
               ),
             ),
@@ -119,7 +120,7 @@ class PolaroidWidget extends StatelessWidget {
           Icon(
             Icons.qr_code_outlined,
             size: height * 0.38,
-            color: const Color(0xFFD0C8B0),
+            color: const Color(0xFFBDBDBD),
           ),
         ],
         const SizedBox(height: 4),
@@ -127,7 +128,7 @@ class PolaroidWidget extends StatelessWidget {
           dateText,
           style: TextStyle(
             fontSize: height * 0.095,
-            color: const Color(0xFF9B8C6C),
+            color: const Color(0xFFAAAAAA),
             letterSpacing: 0.8,
             fontWeight: FontWeight.w400,
           ),

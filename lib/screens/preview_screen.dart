@@ -2,17 +2,22 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:gal/gal.dart';
+import '../l10n/app_strings.dart';
+import '../models/layout_type.dart';
 import '../widgets/polaroid_widget.dart';
+import '../widgets/layout_widgets.dart';
 import 'home_screen.dart';
 
 class PreviewScreen extends StatefulWidget {
-  final Uint8List photoBytes;
+  final List<Uint8List> photos;
+  final LayoutType layoutType;
   final String qrData;
   final String dateText;
 
   const PreviewScreen({
     super.key,
-    required this.photoBytes,
+    required this.photos,
+    required this.layoutType,
     required this.qrData,
     required this.dateText,
   });
@@ -29,9 +34,8 @@ class _PreviewScreenState extends State<PreviewScreen> {
   Future<void> _saveToGallery() async {
     setState(() => _isSaving = true);
     try {
-      // 고해상도로 캡처 (3배율 = 실제 화면보다 3배 크게)
       final bytes = await _screenshotController.capture(pixelRatio: 3.0);
-      if (bytes == null) throw Exception('이미지 캡처에 실패했습니다.');
+      if (bytes == null) throw Exception(S.errCapture);
 
       await Gal.putImageBytes(bytes, album: 'QRpicture');
 
@@ -42,15 +46,15 @@ class _PreviewScreenState extends State<PreviewScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Row(
               children: [
-                Icon(Icons.check_circle, color: Colors.white),
-                SizedBox(width: 8),
-                Text('갤러리에 저장되었습니다!'),
+                const Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 8),
+                Text(S.savedToGallery),
               ],
             ),
-            backgroundColor: Color(0xFF5C7A00),
+            backgroundColor: Colors.black,
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -60,7 +64,7 @@ class _PreviewScreenState extends State<PreviewScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('저장 실패: $e'),
+            content: Text(S.saveFailed('$e')),
             backgroundColor: Colors.red[700],
             behavior: SnackBarBehavior.floating,
           ),
@@ -69,12 +73,38 @@ class _PreviewScreenState extends State<PreviewScreen> {
     }
   }
 
+  Widget _buildPreviewWidget(double screenWidth) {
+    switch (widget.layoutType) {
+      case LayoutType.single:
+        return PolaroidWidget(
+          photoBytes: widget.photos[0],
+          qrData: widget.qrData,
+          dateText: widget.dateText,
+          width: screenWidth * 0.72,
+        );
+      case LayoutType.strip4:
+        return Strip4Widget(
+          photos: widget.photos,
+          qrData: widget.qrData,
+          dateText: widget.dateText,
+          width: screenWidth * 0.50,
+        );
+      case LayoutType.grid2x2:
+        return Grid2x2Widget(
+          photos: widget.photos,
+          qrData: widget.qrData,
+          dateText: widget.dateText,
+          width: screenWidth * 0.78,
+        );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final polaroidWidth = MediaQuery.of(context).size.width * 0.72;
+    final screenWidth = MediaQuery.of(context).size.width;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('완성!'),
+        title: Text(S.complete),
         automaticallyImplyLeading: false,
         actions: [
           TextButton(
@@ -85,9 +115,9 @@ class _PreviewScreenState extends State<PreviewScreen> {
                 (_) => false,
               );
             },
-            child: const Text(
-              '홈으로',
-              style: TextStyle(color: Color(0xFF5C4000), fontSize: 15),
+            child: Text(
+              S.goHome,
+              style: const TextStyle(color: Colors.black, fontSize: 15),
             ),
           ),
         ],
@@ -96,30 +126,27 @@ class _PreviewScreenState extends State<PreviewScreen> {
         child: Column(
           children: [
             const SizedBox(height: 8),
-            const Text(
-              'QR 사진이 완성되었습니다!',
-              style: TextStyle(
+            Text(
+              S.qrPhotoReady,
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF5C4000),
+                color: Colors.black,
               ),
             ),
             const SizedBox(height: 6),
-            const Text(
-              'QR 코드를 스캔하면 목소리를 들을 수 있어요',
-              style: TextStyle(fontSize: 13, color: Color(0xFF9B8C6C)),
+            Text(
+              S.scanToListen,
+              style: const TextStyle(fontSize: 13, color: Color(0xFF888888)),
             ),
-            const SizedBox(height: 28),
-            // 폴라로이드 미리보기 (여기서 스크린샷 캡처)
+            const SizedBox(height: 20),
             Expanded(
-              child: Center(
-                child: Screenshot(
-                  controller: _screenshotController,
-                  child: PolaroidWidget(
-                    photoBytes: widget.photoBytes,
-                    qrData: widget.qrData,
-                    dateText: widget.dateText,
-                    width: polaroidWidth,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Center(
+                  child: Screenshot(
+                    controller: _screenshotController,
+                    child: _buildPreviewWidget(screenWidth),
                   ),
                 ),
               ),
@@ -128,7 +155,6 @@ class _PreviewScreenState extends State<PreviewScreen> {
               padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
               child: Column(
                 children: [
-                  // 갤러리 저장 버튼
                   ElevatedButton.icon(
                     onPressed: _isSaving || _saved ? null : _saveToGallery,
                     icon: _isSaving
@@ -142,7 +168,7 @@ class _PreviewScreenState extends State<PreviewScreen> {
                           )
                         : Icon(_saved ? Icons.check : Icons.save_alt),
                     label: Text(
-                      _saved ? '저장 완료!' : '갤러리에 저장',
+                      _saved ? S.saved : S.saveToGallery,
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -150,32 +176,29 @@ class _PreviewScreenState extends State<PreviewScreen> {
                     ),
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size.fromHeight(54),
-                      backgroundColor:
-                          _saved ? const Color(0xFF5C7A00) : null,
                     ),
                   ),
                   const SizedBox(height: 12),
-                  // QR 안내 텍스트
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF8B6914).withValues(alpha: 0.07),
+                      color: Colors.black.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Row(
+                    child: Row(
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.info_outline,
                           size: 16,
-                          color: Color(0xFF8B6914),
+                          color: Colors.black,
                         ),
-                        SizedBox(width: 8),
+                        const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'QR 코드를 스캔하면 웹 브라우저에서\n녹음한 음성이 바로 재생됩니다.',
-                            style: TextStyle(
+                            S.scanQrInfo,
+                            style: const TextStyle(
                               fontSize: 12,
-                              color: Color(0xFF8B6914),
+                              color: Colors.black,
                               height: 1.4,
                             ),
                           ),

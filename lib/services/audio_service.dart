@@ -49,9 +49,23 @@ class AudioService {
     await _player.stop();
   }
 
+  Future<void> pausePlayback() async {
+    await _player.pause();
+  }
+
+  Future<void> resumePlayback() async {
+    await _player.play();
+  }
+
+  Future<void> seekTo(Duration position) async {
+    await _player.seek(position);
+  }
+
   bool get isPlaying => _player.playing;
 
   Stream<PlayerState> get playerStateStream => _player.playerStateStream;
+  Stream<Duration> get positionStream => _player.positionStream;
+  Stream<Duration?> get durationStream => _player.durationStream;
 
   void clearRecording() {
     if (_recordedPath != null) {

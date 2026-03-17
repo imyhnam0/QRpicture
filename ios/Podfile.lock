@@ -1358,6 +1358,9 @@ PODS:
   - gRPC-Core/Interface (1.69.0)
   - gRPC-Core/Privacy (1.69.0)
   - GTMSessionFetcher/Core (4.5.0)
+  - image_cropper (0.0.4):
+    - Flutter
+    - TOCropViewController (~> 2.6.1)
   - image_picker_ios (0.0.1):
     - Flutter
   - just_audio (0.0.1):
@@ -1379,6 +1382,7 @@ PODS:
     - Flutter
   - record_ios (1.2.0):
     - Flutter
+  - TOCropViewController (2.6.1)
 
 DEPENDENCIES:
   - audio_session (from `.symlinks/plugins/audio_session/ios`)
@@ -1387,6 +1391,7 @@ DEPENDENCIES:
   - firebase_storage (from `.symlinks/plugins/firebase_storage/ios`)
   - Flutter (from `Flutter`)
   - gal (from `.symlinks/plugins/gal/darwin`)
+  - image_cropper (from `.symlinks/plugins/image_cropper/ios`)
   - image_picker_ios (from `.symlinks/plugins/image_picker_ios/ios`)
   - just_audio (from `.symlinks/plugins/just_audio/darwin`)
   - mobile_scanner (from `.symlinks/plugins/mobile_scanner/darwin`)
@@ -1414,6 +1419,7 @@ SPEC REPOS:
     - GTMSessionFetcher
     - leveldb-library
     - nanopb
+    - TOCropViewController
 
 EXTERNAL SOURCES:
   audio_session:
@@ -1428,6 +1434,8 @@ EXTERNAL SOURCES:
     :path: Flutter
   gal:
     :path: ".symlinks/plugins/gal/darwin"
+  image_cropper:
+    :path: ".symlinks/plugins/image_cropper/ios"
   image_picker_ios:
     :path: ".symlinks/plugins/image_picker_ios/ios"
   just_audio:
@@ -1464,6 +1472,7 @@ SPEC CHECKSUMS:
   "gRPC-C++": cc207623316fb041a7a3e774c252cf68a058b9e8
   gRPC-Core: 860978b7db482de8b4f5e10677216309b5ff6330
   GTMSessionFetcher: fc75fc972958dceedee61cb662ae1da7a83a91cf
+  image_cropper: 655b3ba703c9e15e3111e79151624d6154288774
   image_picker_ios: 7fe1ff8e34c1790d6fff70a32484959f563a928a
   just_audio: 4e391f57b79cad2b0674030a00453ca5ce817eed
   leveldb-library: cc8b8f8e013647a295ad3f8cd2ddf49a6f19be19
@@ -1472,6 +1481,7 @@ SPEC CHECKSUMS:
   path_provider_foundation: 080d55be775b7414fd5a5ef3ac137b97b097e564
   permission_handler_apple: 4ed2196e43d0651e8ff7ca3483a069d469701f2d
   record_ios: 412daca2350b228e698fffcd08f1f94ceb1e3844
+  TOCropViewController: edfd4f25713d56905ad1e0b9f5be3fbe0f59c863
 
 PODFILE CHECKSUM: 1857a7cdb7dfafe45f2b0e9a9af44644190f7506
 

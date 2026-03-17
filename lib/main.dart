@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
+import 'l10n/app_strings.dart';
 import 'screens/home_screen.dart';
 
 void main() async {
@@ -16,36 +17,44 @@ class QRPictureApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'QR Picture',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF8B6914),
-        ),
-        scaffoldBackgroundColor: const Color(0xFFFFF8F0),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFFFFF8F0),
-          elevation: 0,
-          iconTheme: IconThemeData(color: Color(0xFF5C4000)),
-          titleTextStyle: TextStyle(
-            color: Color(0xFF5C4000),
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF8B6914),
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+    return ValueListenableBuilder<Locale>(
+      valueListenable: appLocale,
+      builder: (context, locale, _) {
+        return MaterialApp(
+          title: 'QR Picture',
+          debugShowCheckedModeBanner: false,
+          locale: locale,
+          theme: ThemeData(
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: Colors.black,
+              brightness: Brightness.light,
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+            scaffoldBackgroundColor: Colors.white,
+            appBarTheme: const AppBarTheme(
+              backgroundColor: Colors.white,
+              elevation: 0,
+              iconTheme: IconThemeData(color: Colors.black),
+              titleTextStyle: TextStyle(
+                color: Colors.black,
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            elevatedButtonTheme: ElevatedButtonThemeData(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.black,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+              ),
+            ),
           ),
-        ),
-      ),
-      home: const HomeScreen(),
+          home: const HomeScreen(),
+        );
+      },
     );
   }
 }
