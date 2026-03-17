@@ -1,0 +1,11 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /audios/{audioId} {
+      // 누구나 읽기 가능 (QR 스캔 후 웹 재생 페이지에서 접근)
+      allow read: if true;
+      // 쓰기는 앱에서만 (추후 인증 추가 가능)
+      allow write: if true;
+    }
+  }
+}

@@ -1,0 +1,11 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /voices/{allPaths=**} {
+      // 누구나 읽기 가능 (웹 플레이어에서 오디오 스트리밍)
+      allow read: if true;
+      // 쓰기는 앱에서만
+      allow write: if true;
+    }
+  }
+}

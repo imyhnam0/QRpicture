@@ -1,0 +1,44 @@
+name: qrpicture
+description: "QR로 목소리를 담기"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.8.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Firebase
+  firebase_core: ^3.12.1
+  firebase_storage: ^12.3.5
+  cloud_firestore: ^5.5.5
+
+  # Image
+  image_picker: ^1.1.2
+  screenshot: ^3.0.0
+  gal: ^2.3.0
+
+  # Audio
+  record: ^6.2.0
+  just_audio: ^0.9.39
+
+  # QR
+  qr_flutter: ^4.1.0
+  mobile_scanner: ^7.2.0
+
+  # Utilities
+  path_provider: ^2.1.4
+  permission_handler: ^11.3.1
+  uuid: ^4.4.2
+  intl: ^0.19.0
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
