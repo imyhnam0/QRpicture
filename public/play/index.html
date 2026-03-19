@@ -49,6 +49,7 @@
       max-width: 170px;
       min-width: 120px;
       margin: 0 auto;
+      position: relative;
     }
 
     .preview-image {
@@ -59,6 +60,30 @@
       display: block;
       background: #eeeeee;
       border: 1px solid #f0f0f0;
+    }
+
+    .preview-image.is-loading {
+      opacity: 0;
+    }
+
+    .preview-loader {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 16px;
+      background: #f7f7f7;
+      color: #8f8267;
+      font-size: 12px;
+      line-height: 1.4;
+      text-align: center;
+      padding: 12px;
+      border: 1px solid #f0f0f0;
+    }
+
+    .preview-loader.hidden {
+      display: none;
     }
 
     .icon-wrap {
@@ -197,6 +222,7 @@
     <div class="preview-wrap" id="previewWrap">
       <div class="preview-label" id="previewLabel"></div>
       <div class="preview-frame">
+        <div class="preview-loader hidden" id="previewLoader"></div>
         <img class="preview-image" id="previewImage" alt="">
       </div>
     </div>
@@ -250,6 +276,7 @@
       errAudio:    isKo ? '재생 오류가 발생했습니다.'   : 'Playback error occurred.',
       preview:     isKo ? '사진 미리보기'              : 'Photo Preview',
       previewAlt:  isKo ? '사진 미리보기'              : 'Photo preview',
+      loadingPhoto:isKo ? '사진 불러오는 중...'       : 'Loading preview...',
     };
 
     document.getElementById('titleText').textContent = T.title;
@@ -267,6 +294,9 @@
     const totalTimeEl   = document.getElementById('totalTime');
     const previewWrap   = document.getElementById('previewWrap');
     const previewImage  = document.getElementById('previewImage');
+    const previewLoader = document.getElementById('previewLoader');
+
+    previewLoader.textContent = T.loadingPhoto;
 
     let isPlaying = false;
 
@@ -293,6 +323,8 @@
         if (!audioUrl) throw new Error('url not found');
 
         if (previewUrl) {
+          previewLoader.classList.remove('hidden');
+          previewImage.classList.add('is-loading');
           previewImage.src = previewUrl;
           previewImage.alt = T.previewAlt;
           previewWrap.style.display = 'block';
@@ -310,9 +342,6 @@
 
         audio.src = audioUrl;
         audio.load();
-        playBtn.disabled = false;
-        setStatus(T.ready, '');
-        statusEl.classList.remove('loading-anim');
       } catch (e) {
         setError(T.errLoad);
         console.error(e);
@@ -356,6 +385,7 @@
     function setStatus(msg, cls) {
       statusEl.textContent = msg;
       statusEl.className = 'status' + (cls ? ' ' + cls : '');
+      statusEl.classList.toggle('loading-anim', cls === 'loading');
     }
 
     function formatTime(secs) {
@@ -385,9 +415,30 @@
       totalTimeEl.textContent = formatTime(audio.duration);
     });
 
+    audio.addEventListener('loadstart', () => {
+      playBtn.disabled = true;
+      setStatus(T.loading, 'loading');
+    });
+
+    audio.addEventListener('canplay', () => {
+      playBtn.disabled = false;
+      setStatus(T.ready, '');
+    });
+
     audio.addEventListener('error', () => {
       setError(T.errAudio);
       setPlayState(false);
+    });
+
+    previewImage.addEventListener('load', () => {
+      previewLoader.classList.add('hidden');
+      previewImage.classList.remove('is-loading');
+    });
+
+    previewImage.addEventListener('error', () => {
+      previewLoader.textContent = T.errLoad;
+      previewLoader.classList.remove('hidden');
+      previewImage.classList.add('is-loading');
     });
   </script>
 </body>
