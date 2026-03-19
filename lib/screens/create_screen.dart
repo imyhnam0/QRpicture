@@ -194,7 +194,8 @@ class _CreateScreenState extends State<CreateScreen> {
         await _audioService.pausePlayback();
       } else {
         final dur = _playbackDuration;
-        final isEnded = dur != null &&
+        final isEnded =
+            dur != null &&
             _playbackPosition.inMilliseconds >= dur.inMilliseconds - 100;
         if (isEnded || _playbackPosition == Duration.zero) {
           await _audioService.playRecording();
@@ -233,6 +234,7 @@ class _CreateScreenState extends State<CreateScreen> {
     try {
       final result = await _storageService.uploadAudio(
         _audioService.recordedPath!,
+        previewBytes: _photos.firstWhere((photo) => photo != null)!,
         onProgress: (p) {
           if (mounted) setState(() => _uploadProgress = p);
         },
@@ -332,9 +334,7 @@ class _CreateScreenState extends State<CreateScreen> {
             ),
           ],
           const SizedBox(height: 16),
-          Expanded(
-            child: _buildPhotoEditor(),
-          ),
+          Expanded(child: _buildPhotoEditor()),
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
             child: Column(
@@ -365,7 +365,9 @@ class _CreateScreenState extends State<CreateScreen> {
                   child: Text(
                     S.nextRecord,
                     style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.w600),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ],
@@ -456,8 +458,7 @@ class _CreateScreenState extends State<CreateScreen> {
                       padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
                       child: Text(
                         _errorMessage!,
-                        style:
-                            const TextStyle(color: Colors.red, fontSize: 13),
+                        style: const TextStyle(color: Colors.red, fontSize: 13),
                         textAlign: TextAlign.center,
                       ),
                     ),
@@ -468,15 +469,18 @@ class _CreateScreenState extends State<CreateScreen> {
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
             child: ElevatedButton(
-              onPressed:
-                  _hasRecording && !_isRecording ? _processAndCreate : null,
+              onPressed: _hasRecording && !_isRecording
+                  ? _processAndCreate
+                  : null,
               style: ElevatedButton.styleFrom(
                 minimumSize: const Size.fromHeight(50),
               ),
               child: Text(
                 S.createQrPhoto,
-                style:
-                    const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ),
@@ -495,17 +499,9 @@ class _CreateScreenState extends State<CreateScreen> {
           width: w,
         );
       case LayoutType.strip4:
-        return Strip4Widget(
-          photos: _photos,
-          dateText: _dateText,
-          width: w,
-        );
+        return Strip4Widget(photos: _photos, dateText: _dateText, width: w);
       case LayoutType.grid2x2:
-        return Grid2x2Widget(
-          photos: _photos,
-          dateText: _dateText,
-          width: w,
-        );
+        return Grid2x2Widget(photos: _photos, dateText: _dateText, width: w);
     }
   }
 
@@ -537,8 +533,7 @@ class _CreateScreenState extends State<CreateScreen> {
               const SizedBox(width: 6),
               Text(
                 S.recording,
-                style:
-                    const TextStyle(color: Color(0xFFCC0000), fontSize: 13),
+                style: const TextStyle(color: Color(0xFFCC0000), fontSize: 13),
               ),
             ],
           ),
@@ -547,11 +542,7 @@ class _CreateScreenState extends State<CreateScreen> {
     } else if (_hasRecording) {
       return Column(
         children: [
-          const Icon(
-            Icons.check_circle_outline,
-            color: Colors.black,
-            size: 28,
-          ),
+          const Icon(Icons.check_circle_outline, color: Colors.black, size: 28),
           const SizedBox(height: 4),
           Text(
             S.recordingDone(_formatDuration(_recordingSeconds)),
@@ -601,9 +592,10 @@ class _CreateScreenState extends State<CreateScreen> {
 
   Widget _buildPlaybackUI() {
     final durMs = (_playbackDuration?.inMilliseconds ?? 0).toDouble();
-    final posMs = _playbackPosition.inMilliseconds
-        .toDouble()
-        .clamp(0.0, durMs > 0 ? durMs : 1.0);
+    final posMs = _playbackPosition.inMilliseconds.toDouble().clamp(
+      0.0,
+      durMs > 0 ? durMs : 1.0,
+    );
     final progress = durMs > 0 ? posMs / durMs : 0.0;
 
     return Column(
@@ -661,9 +653,7 @@ class _CreateScreenState extends State<CreateScreen> {
                 size: 22,
               ),
               label: Text(_isPlaying ? S.pause : S.preview),
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.black,
-              ),
+              style: TextButton.styleFrom(foregroundColor: Colors.black),
             ),
             const SizedBox(width: 20),
             TextButton.icon(
@@ -708,10 +698,7 @@ class _CreateScreenState extends State<CreateScreen> {
               const SizedBox(height: 12),
               Text(
                 '${(_uploadProgress * 100).toInt()}%',
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF888888),
-                ),
+                style: const TextStyle(fontSize: 14, color: Color(0xFF888888)),
               ),
             ],
           ],
@@ -747,8 +734,7 @@ class _CreateScreenState extends State<CreateScreen> {
           height: 30,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color:
-                isDone || isActive ? Colors.black : const Color(0xFFDDDDDD),
+            color: isDone || isActive ? Colors.black : const Color(0xFFDDDDDD),
           ),
           child: Center(
             child: isDone

@@ -97,8 +97,8 @@ class _PlayerScreenState extends State<PlayerScreen>
         child: _isLoading
             ? _buildLoading()
             : _error != null
-                ? _buildError()
-                : _buildPlayer(),
+            ? _buildError()
+            : _buildPlayer(),
       ),
     );
   }
@@ -126,11 +126,7 @@ class _PlayerScreenState extends State<PlayerScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.error_outline,
-              size: 64,
-              color: Color(0xFFCC4444),
-            ),
+            const Icon(Icons.error_outline, size: 64, color: Color(0xFFCC4444)),
             const SizedBox(height: 20),
             Text(
               _error!,
@@ -163,6 +159,10 @@ class _PlayerScreenState extends State<PlayerScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          if (_audioInfo?.previewImageUrl != null) ...[
+            _buildPreviewCard(),
+            const SizedBox(height: 28),
+          ],
           _buildMicIcon(),
           const SizedBox(height: 28),
           if (_audioInfo?.createdAt != null)
@@ -194,6 +194,58 @@ class _PlayerScreenState extends State<PlayerScreen>
     );
   }
 
+  Widget _buildPreviewCard() {
+    return Container(
+      width: double.infinity,
+      constraints: const BoxConstraints(maxHeight: 220),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            S.photoPreview,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF5C4000),
+            ),
+          ),
+          const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: AspectRatio(
+              aspectRatio: 1.6,
+              child: Image.network(
+                _audioInfo!.previewImageUrl!,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  color: const Color(0xFFEEEEEE),
+                  alignment: Alignment.center,
+                  child: const Icon(
+                    Icons.broken_image_outlined,
+                    color: Color(0xFFBDBDBD),
+                    size: 36,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildMicIcon() {
     return StreamBuilder<PlayerState>(
       stream: _player.playerStateStream,
@@ -202,8 +254,7 @@ class _PlayerScreenState extends State<PlayerScreen>
         return AnimatedBuilder(
           animation: _pulseController,
           builder: (context, child) {
-            final scale =
-                isPlaying ? 1.0 + _pulseController.value * 0.07 : 1.0;
+            final scale = isPlaying ? 1.0 + _pulseController.value * 0.07 : 1.0;
             return Transform.scale(
               scale: scale,
               child: Container(
@@ -213,21 +264,16 @@ class _PlayerScreenState extends State<PlayerScreen>
                   shape: BoxShape.circle,
                   gradient: LinearGradient(
                     colors: isPlaying
-                        ? [
-                            const Color(0xFFA07820),
-                            const Color(0xFF8B6914)
-                          ]
-                        : [
-                            const Color(0xFFD0C0A0),
-                            const Color(0xFFB8A880)
-                          ],
+                        ? [const Color(0xFFA07820), const Color(0xFF8B6914)]
+                        : [const Color(0xFFD0C0A0), const Color(0xFFB8A880)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF8B6914)
-                          .withValues(alpha: isPlaying ? 0.35 : 0.15),
+                      color: const Color(
+                        0xFF8B6914,
+                      ).withValues(alpha: isPlaying ? 0.35 : 0.15),
                       blurRadius: isPlaying ? 20 : 8,
                       spreadRadius: isPlaying ? 4 : 0,
                     ),
@@ -259,23 +305,19 @@ class _PlayerScreenState extends State<PlayerScreen>
         return SliderTheme(
           data: SliderThemeData(
             trackHeight: 4,
-            thumbShape:
-                const RoundSliderThumbShape(enabledThumbRadius: 7),
-            overlayShape:
-                const RoundSliderOverlayShape(overlayRadius: 14),
+            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
+            overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
             activeTrackColor: const Color(0xFF8B6914),
             inactiveTrackColor: const Color(0xFFD8CCB0),
             thumbColor: const Color(0xFF8B6914),
-            overlayColor:
-                const Color(0xFF8B6914).withValues(alpha: 0.15),
+            overlayColor: const Color(0xFF8B6914).withValues(alpha: 0.15),
           ),
           child: Slider(
             value: progress,
             onChanged: total.inMilliseconds > 0
                 ? (value) {
                     final pos = Duration(
-                      milliseconds:
-                          (value * total.inMilliseconds).toInt(),
+                      milliseconds: (value * total.inMilliseconds).toInt(),
                     );
                     _player.seek(pos);
                   }
@@ -298,17 +340,11 @@ class _PlayerScreenState extends State<PlayerScreen>
             children: [
               Text(
                 _formatDuration(position),
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Color(0xFF9B8C6C),
-                ),
+                style: const TextStyle(fontSize: 12, color: Color(0xFF9B8C6C)),
               ),
               Text(
                 _formatDuration(_totalDuration),
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Color(0xFF9B8C6C),
-                ),
+                style: const TextStyle(fontSize: 12, color: Color(0xFF9B8C6C)),
               ),
             ],
           ),
@@ -323,8 +359,7 @@ class _PlayerScreenState extends State<PlayerScreen>
       builder: (context, snapshot) {
         final state = snapshot.data;
         final isPlaying = state?.playing ?? false;
-        final isCompleted =
-            state?.processingState == ProcessingState.completed;
+        final isCompleted = state?.processingState == ProcessingState.completed;
 
         return Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -364,8 +399,8 @@ class _PlayerScreenState extends State<PlayerScreen>
                   isCompleted
                       ? Icons.replay
                       : isPlaying
-                          ? Icons.pause_rounded
-                          : Icons.play_arrow_rounded,
+                      ? Icons.pause_rounded
+                      : Icons.play_arrow_rounded,
                   color: Colors.white,
                   size: 38,
                 ),
@@ -374,8 +409,7 @@ class _PlayerScreenState extends State<PlayerScreen>
             const SizedBox(width: 20),
             IconButton(
               onPressed: () {
-                final current =
-                    _player.position + const Duration(seconds: 5);
+                final current = _player.position + const Duration(seconds: 5);
                 _player.seek(current);
               },
               icon: const Icon(Icons.forward_5, size: 30),

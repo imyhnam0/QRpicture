@@ -1,6 +1,14 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 
-final ValueNotifier<Locale> appLocale = ValueNotifier(const Locale('en'));
+Locale _resolveDeviceLocale() {
+  final deviceLocale = PlatformDispatcher.instance.locale;
+  return deviceLocale.languageCode.toLowerCase().startsWith('ko')
+      ? const Locale('ko')
+      : const Locale('en');
+}
+
+final ValueNotifier<Locale> appLocale = ValueNotifier(_resolveDeviceLocale());
 
 class S {
   static String get _lang => appLocale.value.languageCode;
@@ -13,10 +21,23 @@ class S {
   static String get homeSubtitle => isKo
       ? '사진에 목소리를 담아보세요\nQR 코드로 언제 어디서나 재생'
       : 'Capture your voice in photos\nPlay anytime, anywhere with QR codes';
+  static String get homeHeadline => isKo
+      ? '흑백의 여백 위에\n사진과 목소리를 남기세요'
+      : 'Leave your photo and voice\non a black-and-white canvas';
+  static String get homeDescription => isKo
+      ? '사진, 음성, QR을 한 장의 장면으로 묶어\n누구나 바로 열어 들을 수 있게 만듭니다.'
+      : 'Bind photos, voice, and QR into a single frame\nthat anyone can open and hear instantly.';
   static String get createNew => isKo ? '새로 만들기' : 'Create New';
   static String get scanQr => isKo ? 'QR 스캔하기' : 'Scan QR';
   static String get contactUs => isKo ? '문의하기' : 'Contact Us';
-
+  static String get featureVoice => isKo ? '음성 메시지' : 'Voice Message';
+  static String get featureQr => isKo ? 'QR 연결' : 'QR Connected';
+  static String get featureBw => isKo ? '블랙 앤 화이트' : 'Black & White';
+  static String get heroCardTitle =>
+      isKo ? 'Print the moment' : 'Print the moment';
+  static String get heroCardBody => isKo
+      ? '사진 한 장이 끝이 아니라,\n그 순간의 목소리까지 함께 남깁니다.'
+      : 'A photo is no longer the end of the moment.\nKeep the voice with it.';
 
   // ─── Layout Selector ──────────────────────────────────────────
   static String get selectLayout => isKo ? '레이아웃 선택' : 'Select Layout';
@@ -24,18 +45,18 @@ class S {
       isKo ? '원하는 사진 레이아웃을 선택해 주세요' : 'Choose your preferred photo layout';
 
   static String layoutName(String key) => switch (key) {
-        'single' => isKo ? '1장' : '1 Photo',
-        'strip4' => isKo ? '1x4 그리드' : '1×4 Grid',
-        'grid2x2' => isKo ? '2×2 그리드' : '2×2 Grid',
-        _ => key,
-      };
+    'single' => isKo ? '1장' : '1 Photo',
+    'strip4' => isKo ? '1x4 그리드' : '1×4 Grid',
+    'grid2x2' => isKo ? '2×2 그리드' : '2×2 Grid',
+    _ => key,
+  };
 
   static String layoutDesc(String key) => switch (key) {
-        'single' => isKo ? '사진 1장 폴라로이드 스타일' : 'Single photo polaroid style',
-        'strip4' => isKo ? '1열 4행 세로 스트립' : '1 column, 4 rows vertical strip',
-        'grid2x2' => isKo ? '2열 2행 정사각형 그리드' : '2×2 square grid',
-        _ => key,
-      };
+    'single' => isKo ? '사진 1장 폴라로이드 스타일' : 'Single photo polaroid style',
+    'strip4' => isKo ? '1열 4행 세로 스트립' : '1 column, 4 rows vertical strip',
+    'grid2x2' => isKo ? '2열 2행 정사각형 그리드' : '2×2 square grid',
+    _ => key,
+  };
 
   // ─── Create Screen ────────────────────────────────────────────
   static String createTitle(String layout) =>
@@ -46,9 +67,11 @@ class S {
   static String photoProgress(int filled, int total) => isKo
       ? '$filled/$total장 선택됨  ·  각 사진을 탭해서 변경할 수 있어요'
       : '$filled/$total selected · Tap each photo to change';
-  static String get selectFromGallery => isKo ? '갤러리에서 선택' : 'Select from Gallery';
+  static String get selectFromGallery =>
+      isKo ? '갤러리에서 선택' : 'Select from Gallery';
   static String get nextRecord => isKo ? '다음: 음성 녹음' : 'Next: Record Voice';
-  static String get recordYourVoice => isKo ? '목소리를 녹음해 주세요' : 'Record your voice';
+  static String get recordYourVoice =>
+      isKo ? '목소리를 녹음해 주세요' : 'Record your voice';
   static String get recording => isKo ? '녹음 중...' : 'Recording...';
   static String recordingDone(String time) =>
       isKo ? '녹음 완료  $time' : 'Recording done  $time';
@@ -93,9 +116,8 @@ class S {
       : 'No QR code found. Try selecting another photo.';
   static String get scanCannotRead =>
       isKo ? 'QR 코드 값을 읽을 수 없습니다.' : 'Unable to read the QR code value.';
-  static String scanAnalyzeError(String e) => isKo
-      ? '이미지 분석 중 오류가 발생했습니다.\n($e)'
-      : 'Error analyzing the image.\n($e)';
+  static String scanAnalyzeError(String e) =>
+      isKo ? '이미지 분석 중 오류가 발생했습니다.\n($e)' : 'Error analyzing the image.\n($e)';
   static String get scanHint =>
       isKo ? 'QR 코드를 프레임 안에 위치시켜 주세요' : 'Place the QR code inside the frame';
   static String get analyzing => isKo ? '분석 중...' : 'Analyzing...';
@@ -111,8 +133,7 @@ class S {
       isKo ? 'QR 코드를 스캔하면 목소리를 들을 수 있어요' : 'Scan the QR code to hear the voice';
   static String get savedToGallery =>
       isKo ? '갤러리에 저장되었습니다!' : 'Saved to gallery!';
-  static String saveFailed(String e) =>
-      isKo ? '저장 실패: $e' : 'Save failed: $e';
+  static String saveFailed(String e) => isKo ? '저장 실패: $e' : 'Save failed: $e';
   static String get saved => isKo ? '저장 완료!' : 'Saved!';
   static String get saveToGallery => isKo ? '갤러리에 저장' : 'Save to Gallery';
   static String get scanQrInfo => isKo
@@ -123,6 +144,7 @@ class S {
 
   // ─── Player Screen ────────────────────────────────────────────
   static String get voiceMessage => isKo ? '목소리 메시지' : 'Voice Message';
+  static String get photoPreview => isKo ? '사진 미리보기' : 'Photo Preview';
   static String get audioNotFound => isKo
       ? '음성 데이터를 찾을 수 없습니다.\nQR 코드가 올바른지 확인해 주세요.'
       : 'Audio data not found.\nPlease check if the QR code is correct.';
@@ -136,13 +158,25 @@ class S {
       : '${_monthName(dt.month)} ${dt.day}, ${dt.year}';
 
   static String _monthName(int m) => const [
-        '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-      ][m];
+    '',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ][m];
 
   // ─── Inquiry Screen ───────────────────────────────────────────
   static String get inquiryTitle => isKo ? '문의하기' : 'Contact Us';
-  static String get inquirySubmitted => isKo ? '문의가 접수되었습니다!' : 'Inquiry submitted!';
+  static String get inquirySubmitted =>
+      isKo ? '문의가 접수되었습니다!' : 'Inquiry submitted!';
   static String get inquiryThanks => isKo
       ? '소중한 의견 감사합니다.\n개발자가 7일 안에 확인하고 반영하겠습니다.'
       : 'Thank you for your feedback.\nWe\'ll review and respond within 7 days.';
@@ -159,8 +193,9 @@ class S {
   static String get inquiryMinLength =>
       isKo ? '5자 이상 입력해 주세요.' : 'Please enter at least 5 characters.';
   static String get emailOptional => isKo ? '이메일 (선택)' : 'Email (optional)';
-  static String get emailHint =>
-      isKo ? '답변을 받고 싶으시면 이메일을 입력해 주세요.' : 'Enter your email if you\'d like a reply.';
+  static String get emailHint => isKo
+      ? '답변을 받고 싶으시면 이메일을 입력해 주세요.'
+      : 'Enter your email if you\'d like a reply.';
   static String get emailInvalid =>
       isKo ? '올바른 이메일 형식이 아닙니다.' : 'Invalid email format.';
   static String get sendInquiry => isKo ? '문의 보내기' : 'Send Inquiry';

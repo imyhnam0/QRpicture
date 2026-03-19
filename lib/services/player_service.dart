@@ -3,8 +3,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class AudioInfo {
   final String url;
   final DateTime? createdAt;
+  final String? previewImageUrl;
 
-  AudioInfo({required this.url, this.createdAt});
+  AudioInfo({required this.url, this.createdAt, this.previewImageUrl});
 }
 
 class PlayerService {
@@ -34,6 +35,11 @@ class PlayerService {
     if (url == null) return null;
 
     final createdAt = (data['createdAt'] as Timestamp?)?.toDate();
-    return AudioInfo(url: url, createdAt: createdAt);
+    final previewImageUrl = data['previewImageUrl'] as String?;
+    return AudioInfo(
+      url: url,
+      createdAt: createdAt,
+      previewImageUrl: previewImageUrl,
+    );
   }
 }

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../l10n/app_strings.dart';
 import '../models/layout_type.dart';
 import 'create_screen.dart';
-import 'scan_screen.dart';
 import 'inquiry_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -31,7 +30,12 @@ class HomeScreen extends StatelessWidget {
             const SizedBox(height: 20),
             _buildLangOption(sheetContext, '한국어', '한국어', const Locale('ko')),
             const Divider(height: 1, color: Color(0xFFEEEEEE)),
-            _buildLangOption(sheetContext, 'English', 'English', const Locale('en')),
+            _buildLangOption(
+              sheetContext,
+              'English',
+              'English',
+              const Locale('en'),
+            ),
           ],
         ),
       ),
@@ -138,9 +142,7 @@ class HomeScreen extends StatelessWidget {
         Navigator.pop(sheetContext);
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (_) => CreateScreen(layoutType: layout),
-          ),
+          MaterialPageRoute(builder: (_) => CreateScreen(layoutType: layout)),
         );
       },
       borderRadius: BorderRadius.circular(12),
@@ -199,15 +201,18 @@ class HomeScreen extends StatelessWidget {
           width: 36,
           height: 60,
           child: Column(
-            children: List.generate(4, (i) => Expanded(
-              child: Container(
-                margin: EdgeInsets.only(top: i == 0 ? 0 : 2),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  border: Border.all(color: color, width: 1.2),
+            children: List.generate(
+              4,
+              (i) => Expanded(
+                child: Container(
+                  margin: EdgeInsets.only(top: i == 0 ? 0 : 2),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    border: Border.all(color: color, width: 1.2),
+                  ),
                 ),
               ),
-            )),
+            ),
           ),
         );
       case LayoutType.grid2x2:
@@ -219,40 +224,48 @@ class HomeScreen extends StatelessWidget {
               Expanded(
                 child: Row(
                   children: [
-                    Expanded(child: Container(
-                      margin: const EdgeInsets.only(right: 1.5, bottom: 1.5),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.05),
-                        border: Border.all(color: color, width: 1.2),
+                    Expanded(
+                      child: Container(
+                        margin: const EdgeInsets.only(right: 1.5, bottom: 1.5),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.05),
+                          border: Border.all(color: color, width: 1.2),
+                        ),
                       ),
-                    )),
-                    Expanded(child: Container(
-                      margin: const EdgeInsets.only(left: 1.5, bottom: 1.5),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.05),
-                        border: Border.all(color: color, width: 1.2),
+                    ),
+                    Expanded(
+                      child: Container(
+                        margin: const EdgeInsets.only(left: 1.5, bottom: 1.5),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.05),
+                          border: Border.all(color: color, width: 1.2),
+                        ),
                       ),
-                    )),
+                    ),
                   ],
                 ),
               ),
               Expanded(
                 child: Row(
                   children: [
-                    Expanded(child: Container(
-                      margin: const EdgeInsets.only(right: 1.5, top: 1.5),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.05),
-                        border: Border.all(color: color, width: 1.2),
+                    Expanded(
+                      child: Container(
+                        margin: const EdgeInsets.only(right: 1.5, top: 1.5),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.05),
+                          border: Border.all(color: color, width: 1.2),
+                        ),
                       ),
-                    )),
-                    Expanded(child: Container(
-                      margin: const EdgeInsets.only(left: 1.5, top: 1.5),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.05),
-                        border: Border.all(color: color, width: 1.2),
+                    ),
+                    Expanded(
+                      child: Container(
+                        margin: const EdgeInsets.only(left: 1.5, top: 1.5),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.05),
+                          border: Border.all(color: color, width: 1.2),
+                        ),
                       ),
-                    )),
+                    ),
                   ],
                 ),
               ),
@@ -274,14 +287,15 @@ class HomeScreen extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Language selector button
                   Align(
                     alignment: Alignment.topRight,
                     child: GestureDetector(
                       onTap: () => _showLanguageSelector(context),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 6),
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.black.withValues(alpha: 0.06),
                           borderRadius: BorderRadius.circular(20),
@@ -289,8 +303,11 @@ class HomeScreen extends StatelessWidget {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.language,
-                                size: 16, color: Colors.black),
+                            const Icon(
+                              Icons.language,
+                              size: 16,
+                              color: Colors.black,
+                            ),
                             const SizedBox(width: 4),
                             Text(
                               S.isKo ? '한국어' : 'English',
@@ -306,7 +323,6 @@ class HomeScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  // Main icon
                   ClipRRect(
                     borderRadius: BorderRadius.circular(20),
                     child: Image.asset(
@@ -339,12 +355,16 @@ class HomeScreen extends StatelessWidget {
                   const SizedBox(height: 52),
                   ElevatedButton.icon(
                     onPressed: () => _showLayoutSelector(context),
-                    icon: const Icon(Icons.add_photo_alternate_outlined,
-                        size: 22),
+                    icon: const Icon(
+                      Icons.add_photo_alternate_outlined,
+                      size: 22,
+                    ),
                     label: Text(
                       S.createNew,
                       style: const TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.w600),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size.fromHeight(56),
@@ -364,44 +384,20 @@ class HomeScreen extends StatelessWidget {
                     label: Text(
                       S.contactUs,
                       style: const TextStyle(
-                          fontSize: 14, fontWeight: FontWeight.w500),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                     style: TextButton.styleFrom(
                       foregroundColor: const Color(0xFF888888),
                       minimumSize: const Size.fromHeight(44),
                     ),
                   ),
-                  
                 ],
               ),
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildFeatureChip(IconData icon, String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: Colors.black),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 11,
-              color: Colors.black,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
       ),
     );
   }

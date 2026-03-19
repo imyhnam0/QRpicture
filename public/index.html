@@ -1,37 +1,108 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>QR Picture</title>
+  <title>DearVoice</title>
   <style>
+    * { box-sizing: border-box; }
+
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #FFF8F0;
+      margin: 0;
+      min-height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
-      min-height: 100vh;
-      margin: 0;
+      padding: 24px;
+      background:
+        radial-gradient(circle at top, rgba(255,255,255,0.08), transparent 30%),
+        linear-gradient(180deg, #141414 0%, #050505 100%);
+      color: #ffffff;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
     }
+
     .card {
-      background: white;
-      border-radius: 20px;
-      padding: 40px 32px;
-      max-width: 360px;
-      width: 90%;
+      width: min(100%, 420px);
+      background: #ffffff;
+      color: #111111;
+      border-radius: 28px;
+      padding: 44px 32px 38px;
       text-align: center;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+      box-shadow:
+        0 12px 30px rgba(0,0,0,0.30),
+        0 40px 80px rgba(0,0,0,0.22);
+      border: 1px solid rgba(255,255,255,0.08);
     }
-    h1 { color: #5C4000; margin-bottom: 8px; }
-    p { color: #9B8C6C; }
+
+    .mark {
+      width: 88px;
+      height: 88px;
+      margin: 0 auto 22px;
+      border-radius: 24px;
+      background: #0f0f0f;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      color: #ffffff;
+      box-shadow: 0 12px 24px rgba(0,0,0,0.16);
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: 44px;
+      line-height: 1;
+      letter-spacing: -0.05em;
+      color: #000000;
+    }
+
+    p {
+      margin: 0;
+      color: #6e6e6e;
+      font-size: 18px;
+      line-height: 1.6;
+      word-break: keep-all;
+    }
+
+    @media (max-width: 480px) {
+      .card {
+        padding: 38px 24px 32px;
+        border-radius: 24px;
+      }
+
+      h1 {
+        font-size: 38px;
+      }
+
+      p {
+        font-size: 16px;
+      }
+    }
   </style>
 </head>
 <body>
   <div class="card">
-    <div style="font-size:64px; margin-bottom:16px;">📷</div>
-    <h1>QR Picture</h1>
-    <p>사진 속 QR 코드를 스캔해서<br>목소리를 들어보세요.</p>
+    <div class="mark">D</div>
+    <h1 id="titleText"></h1>
+    <p id="descText"></p>
   </div>
+
+  <script>
+    const isKo = (navigator.language || navigator.userLanguage || 'en')
+      .toLowerCase()
+      .startsWith('ko');
+
+    const T = {
+      title: 'DearVoice',
+      description: isKo
+        ? '사진 속에 그때 느꼈던 그 감정을 음성으로 남겨요.'
+        : 'Leave the emotion you felt in that moment as a voice inside the photo.'
+    };
+
+    document.documentElement.lang = isKo ? 'ko' : 'en';
+    document.title = T.title;
+    document.getElementById('titleText').textContent = T.title;
+    document.getElementById('descText').textContent = T.description;
+  </script>
 </body>
 </html>
