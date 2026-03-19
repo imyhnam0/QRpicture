@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:typed_data';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:just_audio/just_audio.dart';
@@ -28,6 +30,7 @@ class _CreateScreenState extends State<CreateScreen> {
   final AudioService _audioService = AudioService();
   final StorageService _storageService = StorageService();
   final ImagePicker _imagePicker = ImagePicker();
+  final GlobalKey _previewBoundaryKey = GlobalKey();
 
   _Step _step = _Step.selectPhoto;
   late List<Uint8List?> _photos;
@@ -225,6 +228,10 @@ class _CreateScreenState extends State<CreateScreen> {
   // ─── 업로드 및 처리 ───────────────────────────────────────────
 
   Future<void> _processAndCreate() async {
+    final previewBytes =
+        await _captureLayoutPreviewBytes() ??
+        _photos.firstWhere((photo) => photo != null)!;
+
     setState(() {
       _step = _Step.processing;
       _uploadProgress = 0;
@@ -234,7 +241,7 @@ class _CreateScreenState extends State<CreateScreen> {
     try {
       final result = await _storageService.uploadAudio(
         _audioService.recordedPath!,
-        previewBytes: _photos.firstWhere((photo) => photo != null)!,
+        previewBytes: previewBytes,
         onProgress: (p) {
           if (mounted) setState(() => _uploadProgress = p);
         },
@@ -277,6 +284,22 @@ class _CreateScreenState extends State<CreateScreen> {
     final m = (seconds ~/ 60).toString().padLeft(2, '0');
     final s = (seconds % 60).toString().padLeft(2, '0');
     return '$m:$s';
+  }
+
+  Future<Uint8List?> _captureLayoutPreviewBytes() async {
+    try {
+      await WidgetsBinding.instance.endOfFrame;
+      final boundary =
+          _previewBoundaryKey.currentContext?.findRenderObject()
+              as RenderRepaintBoundary?;
+      if (boundary == null) return null;
+
+      final image = await boundary.toImage(pixelRatio: 3);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      return byteData?.buffer.asUint8List();
+    } catch (_) {
+      return null;
+    }
   }
 
   // ─── Build ────────────────────────────────────────────────────
@@ -443,7 +466,10 @@ class _CreateScreenState extends State<CreateScreen> {
                     child: Center(
                       child: FittedBox(
                         fit: BoxFit.contain,
-                        child: _buildAudioStepPreview(screenWidth),
+                        child: RepaintBoundary(
+                          key: _previewBoundaryKey,
+                          child: _buildAudioStepPreview(screenWidth),
+                        ),
                       ),
                     ),
                   ),

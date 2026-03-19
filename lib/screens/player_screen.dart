@@ -197,7 +197,6 @@ class _PlayerScreenState extends State<PlayerScreen>
   Widget _buildPreviewCard() {
     return Container(
       width: double.infinity,
-      constraints: const BoxConstraints(maxHeight: 220),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -222,20 +221,24 @@ class _PlayerScreenState extends State<PlayerScreen>
             ),
           ),
           const SizedBox(height: 10),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: AspectRatio(
-              aspectRatio: 1.6,
-              child: Image.network(
-                _audioInfo!.previewImageUrl!,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  color: const Color(0xFFEEEEEE),
-                  alignment: Alignment.center,
-                  child: const Icon(
-                    Icons.broken_image_outlined,
-                    color: Color(0xFFBDBDBD),
-                    size: 36,
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 170, minWidth: 120),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Image.network(
+                  _audioInfo!.previewImageUrl!,
+                  fit: BoxFit.contain,
+                  width: double.infinity,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    height: 160,
+                    color: const Color(0xFFEEEEEE),
+                    alignment: Alignment.center,
+                    child: const Icon(
+                      Icons.broken_image_outlined,
+                      color: Color(0xFFBDBDBD),
+                      size: 36,
+                    ),
                   ),
                 ),
               ),

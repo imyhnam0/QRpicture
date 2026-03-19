@@ -44,13 +44,21 @@
       font-weight: 600;
     }
 
+    .preview-frame {
+      width: 58%;
+      max-width: 170px;
+      min-width: 120px;
+      margin: 0 auto;
+    }
+
     .preview-image {
       width: 100%;
-      aspect-ratio: 1.35;
-      object-fit: cover;
+      height: auto;
+      object-fit: contain;
       border-radius: 16px;
       display: block;
       background: #eeeeee;
+      border: 1px solid #f0f0f0;
     }
 
     .icon-wrap {
@@ -188,7 +196,9 @@
   <div class="card">
     <div class="preview-wrap" id="previewWrap">
       <div class="preview-label" id="previewLabel"></div>
-      <img class="preview-image" id="previewImage" alt="">
+      <div class="preview-frame">
+        <img class="preview-image" id="previewImage" alt="">
+      </div>
     </div>
 
     <div class="icon-wrap">
